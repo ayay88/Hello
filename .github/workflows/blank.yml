@@ -1,0 +1,50 @@
+name: Tmate Debug Session
+
+on: [push]
+
+jobs:
+  tmate-session:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+
+    - name: Install tmate
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y tmate
+
+    - name: Start tmate session and hold indefinitely
+      run: |
+        echo "Starting tmate..."
+        tmate -S /tmp/tmate.sock new-session -d
+        tmate -S /tmp/tmate.sock wait tmate-ready
+
+        echo "Fetching tmate connection info..."
+        SSH_CMD=$(tmate -S /tmp/tmate.sock display -p '#{tmate_ssh}')
+        WEB_URL=$(tmate -S /tmp/tmate.sock display -p '#{tmate_web}')
+
+        echo "== SSH access =="
+        echo "$SSH_CMD"
+        echo "$SSH_CMD" > tmate_ssh.txt
+
+        echo "== Web access =="
+        echo "$WEB_URL"
+        echo "$WEB_URL" > tmate_web.txt
+
+        echo "Tmate session started. Connect using the above SSH/Web URL."
+        echo "Keeping the session alive indefinitely..."
+
+        # Infinite loop to keep the runner alive
+        while true; do
+          sleep 30
+        done
+
+    - name: Upload tmate session info
+      uses: actions/upload-artifact@v3
+      with:
+        name: tmate-session-info
+        path: |
+          tmate_ssh.txt
+          tmate_web.txt
